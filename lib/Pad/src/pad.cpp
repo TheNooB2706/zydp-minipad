@@ -1,6 +1,6 @@
 #include <pad.hpp>
 
-Pad::Pad(int pin_num, float threshold_high, float threshold_low, int buffer_size) : buffer(buffer_size) {
+Pad::Pad(int pin_num, float threshold_high, float threshold_low, int buffer_size, int midi_note_num) : buffer(buffer_size) {
     pin = pin_num;
     pinMode(pin, INPUT);
     while (!buffer.bufferIsFull()) {
@@ -9,7 +9,10 @@ Pad::Pad(int pin_num, float threshold_high, float threshold_low, int buffer_size
 
     _threshold_high = threshold_high;
     _threshold_low = threshold_low;
+    _midi_note_num = midi_note_num;
 }
+
+Pad::Pad(int pin_num, float threshold_high, float threshold_low, int buffer_size) : Pad(pin_num, threshold_high, threshold_low, buffer_size, 0) {}
 
 int Pad::poll() {
     buffer.add(analogRead(pin));
@@ -17,10 +20,12 @@ int Pad::poll() {
     if ((current_avg > _threshold_high) && (_cooldown == 0) && !_state) {
         _cooldown = _cooldown_time;
         _state = true;
+        on_trigger(get_max());
         return 1;
     }
     else if ((current_avg < _threshold_low) && (_cooldown == 0) && _state) {
         _state = false;
+        on_cooldown();
         return 2;
     }
     else if ((current_avg < _threshold_low) && (_cooldown != 0)) {
@@ -43,3 +48,6 @@ float Pad::get_max() {
 bool Pad::get_state() {
     return _state;
 }
+
+void Pad::on_trigger(int pad_input) {}
+void Pad::on_cooldown() {}

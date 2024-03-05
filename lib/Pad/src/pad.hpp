@@ -11,6 +11,7 @@ class Pad {
         /// @param threshold_low Low-going threshold. Used to determine if a pad is fully cool-down.
         /// @param buffer_size Buffer size of buffer storing the analogRead value from the pin_num.
         Pad(int pin_num, float threshold_high, float threshold_low, int buffer_size);
+        Pad(int pin_num, float threshold_high, float threshold_low, int buffer_size, int midi_note_num);
 
         /// @brief Poll the pad by acquiring analogRead value and appending to the buffer.
         /// @retval 1: Trigger is detected
@@ -24,11 +25,17 @@ class Pad {
         /// @brief The state of the pad will be true for the duration between trigger is detected to stable state is reached. Otherwise, it will be false.
         bool get_state();
 
+        // Overload the following functions to be executed in poll when pad triggered and fully cool-down.
+        virtual void on_trigger(int pad_input);
+        virtual void on_cooldown();
+
     private:
 
         int _cooldown = 0;
         bool _state = false;
         float _threshold_high;
         float _threshold_low;
+        int _midi_note_num;
         const int _cooldown_time = 32;
+
 };
