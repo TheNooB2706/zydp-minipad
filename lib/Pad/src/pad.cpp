@@ -41,12 +41,20 @@ int Pad::poll() {
     }
 }
 
-float Pad::get_max() {
+int Pad::get_max() {
     return buffer.getMaxInBuffer();
 }
 
 bool Pad::get_state() {
     return _state;
+}
+
+int Pad::get_note_num() {
+    return _midi_note_num;
+}
+
+void Pad::set_note_num(int new_note_num) {
+    _midi_note_num = new_note_num;
 }
 
 void Pad::on_trigger(int pad_input) {}

@@ -20,10 +20,16 @@ class Pad {
         int poll();  
 
         /// @brief Get the peak level of the signal in the buffer.
-        float get_max();
+        int get_max();
 
         /// @brief The state of the pad will be true for the duration between trigger is detected to stable state is reached. Otherwise, it will be false.
         bool get_state();
+
+        /// @brief Get MIDI note number assigned to this pad.
+        int get_note_num();
+
+        /// @brief Assign new MIDI note number to this pad.
+        void set_note_num(int new_note_num);
 
         // Overload the following functions to be executed in poll when pad triggered and fully cool-down.
         virtual void on_trigger(int pad_input);
