@@ -4,7 +4,7 @@ Pad::Pad(int pin_num, float threshold_high, float threshold_low, int buffer_size
     pin = pin_num;
     pinMode(pin, INPUT);
     while (!buffer.bufferIsFull()) {
-    buffer.add(analogRead(pin));
+        buffer.add(analogRead(pin));
     }
 
     _threshold_high = threshold_high;
@@ -35,6 +35,16 @@ int Pad::poll() {
     else if (!(current_avg < _threshold_low) && (_cooldown != 0)) {
         _cooldown = _cooldown_time;
         return 0;
+    }
+    else {
+        return 0;
+    }
+}
+
+int Pad::poll(uint sample_period_micro) {
+    if ((micros()-_last_sample_time) > sample_period_micro) {
+        _last_sample_time = micros();
+        return poll();
     }
     else {
         return 0;

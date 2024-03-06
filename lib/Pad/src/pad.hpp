@@ -19,6 +19,10 @@ class Pad {
         /// @retval 0: Otherwise
         int poll();  
 
+        /// @brief Same as poll function, but with a delay of sampling period between polling.
+        /// @param sample_period_micro Sampling period in microseconds
+        int poll(uint sample_period_micro);
+
         /// @brief Get the peak level of the signal in the buffer.
         int get_max();
 
@@ -42,6 +46,7 @@ class Pad {
         float _threshold_high;
         float _threshold_low;
         int _midi_note_num;
+        uint32 _last_sample_time;
         const int _cooldown_time = 32;
 
 };
