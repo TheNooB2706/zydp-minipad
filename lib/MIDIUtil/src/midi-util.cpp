@@ -19,3 +19,8 @@ int midi_lin_vel_map(int input, int lower_input, int upper_input) {
 int midi_lin_vel_map(int input) {
     return midi_lin_vel_map(input, 0, 4096);
 }
+
+int midi_exp_vel_map(int input, double a) {
+    double exponent = -a*input + log2(127);
+    return round(-exp2(exponent)+127);
+}

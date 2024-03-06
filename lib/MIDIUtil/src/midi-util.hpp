@@ -15,3 +15,9 @@ int midi_lin_vel_map(int input, int lower_input, int upper_input);
 /// @param input Raw input from analogRead 
 /// @return MIDI velocity
 int midi_lin_vel_map(int input);
+
+/// @brief Map raw pad input to MIDI velocity using exponential equation -e^(ax+ln(127))+127
+/// @param input Raw input from analogRead
+/// @param a Coefficient a in the equation
+/// @return MIDI velocity
+int midi_exp_vel_map(int input, double a);
