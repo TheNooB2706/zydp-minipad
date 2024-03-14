@@ -50,3 +50,22 @@ class Pad {
         const int _cooldown_time = 32;
 
 };
+
+class MuxPad: public Pad {
+    public:
+
+        MuxPad(int pin_num, float threshold_high, float threshold_low, int buffer_size, const int select_pins[4], int mux_address);
+        MuxPad(int pin_num, float threshold_high, float threshold_low, int buffer_size, int midi_note_num, const int select_pins[4], int mux_address);
+
+        int poll(); 
+
+        int poll(uint sample_period_micro);
+
+    private:
+
+        int _select_pins[4];
+        int _mux_address;
+
+        void _set_mux_address();
+
+};
