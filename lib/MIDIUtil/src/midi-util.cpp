@@ -24,3 +24,8 @@ int midi_exp_vel_map(int input, double a) {
     double exponent = -a*input + log2(127);
     return round(-exp2(exponent)+127);
 }
+
+int midi_exp_pow_vel_map(int input, double a, double b) {
+    double exponent = -a*pow(input, b) + log2(127);
+    return round(-exp2(exponent)+127);
+}
