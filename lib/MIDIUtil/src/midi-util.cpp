@@ -1,5 +1,5 @@
 #include "midi-util.hpp"
-#include <math.h>
+#include <cmath>
 
 int midi_lin_vel_map(int input, int lower_input, int upper_input) {
     if (input <= lower_input) {
