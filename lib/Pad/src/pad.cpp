@@ -71,14 +71,22 @@ void Pad::on_trigger(int pad_input) {}
 void Pad::on_cooldown() {}
 
 MuxPad::MuxPad(int pin_num, float threshold_high, float threshold_low, int buffer_size, int midi_note_num, const int select_pins[4], int mux_address) : Pad(pin_num, threshold_high, threshold_low, buffer_size, midi_note_num) {
-    for (size_t i=0; i<4; i++) {
-        _select_pins[i] = select_pins[i];
-        pinMode(select_pins[i], OUTPUT);
-    }
+    set_sel_pins(select_pins);
     _mux_address = mux_address;
 }
 
 MuxPad::MuxPad(int pin_num, float threshold_high, float threshold_low, int buffer_size, const int select_pins[4], int mux_address) : MuxPad(pin_num, threshold_high, threshold_low, buffer_size, 0, select_pins, mux_address) {}
+
+void MuxPad::set_mux_address(int mux_address) {
+    _mux_address = mux_address;
+}
+
+void MuxPad::set_sel_pins(const int select_pins[4]) {
+    for (size_t i=0; i<4; i++) {
+        _select_pins[i] = select_pins[i];
+        pinMode(select_pins[i], OUTPUT);
+    }
+}
 
 int MuxPad::poll() {
     _set_mux_address();

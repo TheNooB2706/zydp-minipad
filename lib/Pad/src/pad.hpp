@@ -46,7 +46,7 @@ class Pad {
         float _threshold_high;
         float _threshold_low;
         int _midi_note_num;
-        uint32 _last_sample_time;
+        uint32 _last_sample_time = 0;
         const int _cooldown_time = 32;
 
 };
@@ -60,6 +60,10 @@ class MuxPad: public Pad {
         int poll(); 
 
         int poll(uint sample_period_micro);
+
+        void set_mux_address(int mux_address);
+
+        void set_sel_pins(const int select_pins[4]);
 
     private:
 
