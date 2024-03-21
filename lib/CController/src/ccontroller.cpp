@@ -19,6 +19,7 @@ int CController::poll() {
     int cur_reading = analogRead(pin);
     if (abs(cur_reading-_last_reading) > _delta_threshold) {
         on_change(cur_reading);
+        _last_reading = cur_reading;
         return 1;
     }
     else {
