@@ -63,6 +63,8 @@ class MuxPad: public Pad {
 
         void set_mux_address(int mux_address);
 
+        int get_mux_address();
+
         void set_sel_pins(const int select_pins[4]);
 
     private:

@@ -81,6 +81,10 @@ void MuxPad::set_mux_address(int mux_address) {
     _mux_address = mux_address;
 }
 
+int MuxPad::get_mux_address() {
+    return _mux_address;
+}
+
 void MuxPad::set_sel_pins(const int select_pins[4]) {
     for (size_t i=0; i<4; i++) {
         _select_pins[i] = select_pins[i];
@@ -102,4 +106,5 @@ void MuxPad::_set_mux_address() {
     for (size_t i=0; i<4; i++) {
         digitalWrite(_select_pins[i], bitRead(_mux_address, i));
     }
+    delay_us(50);
 }
