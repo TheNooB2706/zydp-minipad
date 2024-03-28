@@ -10,7 +10,7 @@ class CController {
 
         int poll();
 
-        int poll(int sample_period_micro);
+        int poll(unsigned int sample_period_micro);
 
         /// @brief Get MIDI CC number assigned to this pad.
         int get_cc_num();

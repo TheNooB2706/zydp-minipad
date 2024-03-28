@@ -27,7 +27,7 @@ int CController::poll() {
     }
 }
 
-int CController::poll(int sample_period_micro) {
+int CController::poll(unsigned int sample_period_micro) {
     if ((micros()-_last_sample_time) > sample_period_micro) {
         _last_sample_time = micros();
         return poll();
