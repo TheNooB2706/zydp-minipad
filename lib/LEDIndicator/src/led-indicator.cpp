@@ -9,6 +9,8 @@ LEDIndicator::LEDIndicator(int red_pin, int green_pin, int blue_pin) {
     pinMode(red_pin, OUTPUT);
     pinMode(green_pin, OUTPUT);
     pinMode(blue_pin, OUTPUT);
+
+    off();
 }
 
 void LEDIndicator::on(int red, int green, int blue) {
