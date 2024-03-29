@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <USBComposite.h>
 #include <MIDI.h>
+#include <AceButton.h>
 
 #include <pad.hpp>
 #include <ccontroller.hpp>
@@ -33,6 +34,7 @@ const int KICK_NOTE_NUM = BASS_DRUM_GM2;
 const int CC_THRESH_CHANGE=1;
 const int CC_PEDAL_PIN = PA2;
 
+const int NUM_BUTTONS = 5;
 const int BUTTON1_PIN = PB5;
 const int BUTTON2_PIN = PB6;
 const int BUTTON3_PIN = PB7;
@@ -95,14 +97,6 @@ class MIDIMuxPad: public MuxPad {
     void on_cooldown() {
       pads_triggered(false, get_note_num(), f_midi_channel_num, 0, f_vel_map_profile, PADS_TYPE[get_mux_address()]);
     }
-
-    int debug() {
-    for (size_t i=0; i<4; i++) {
-        digitalWrite(SELECT_PINS[i], bitRead(get_mux_address(), i));
-    }
-    delay_us(50);
-      return analogRead(pin);
-    }
 };
 
 MIDIMuxPad pads_array[] = {
@@ -139,6 +133,10 @@ MIDICController cc_pedal(CC_PEDAL_PIN, CC_THRESH_CHANGE, 4);
 
 LEDIndicator led(LED_RED_PIN, LED_GREEN_PIN, LED_BLUE_PIN);
 
+// ===== Buttons initialization =====
+
+ace_button::AceButton buttons[NUM_BUTTONS];
+
 // ===== Global functions =====
 
 /// @brief Placeholder function for any polling call
@@ -153,6 +151,10 @@ void global_poll() {
   
   if (f_cc_ped_enabled) {
     cc_pedal.poll();
+  }
+
+  for (uint8_t i = 0; i < NUM_BUTTONS; i++) {
+    buttons[i].check();
   }
 }
 
@@ -178,6 +180,10 @@ int global_poll_return() {
     if (cc_pedal.poll() == 1) {
       return 13;
     }
+  }
+
+  for (uint8_t i = 0; i < NUM_BUTTONS; i++) {
+    buttons[i].check();
   }
 
   return -1;
@@ -270,9 +276,56 @@ void send_cc_event(int cc_number, int channel_number, int cc_value) {
   }
 }
 
+void handle_button_event(ace_button::AceButton* button, uint8_t eventType, uint8_t buttonState) {
+  uint8_t id = button->getId();
+
+  switch (eventType) {
+    case ace_button::AceButton::kEventReleased:
+    case ace_button::AceButton::kEventClicked:
+      CompositeSerial.print("Clicked button ");
+      CompositeSerial.println(id);
+      break;
+    case ace_button::AceButton::kEventDoubleClicked:
+      CompositeSerial.print("Double clicked button ");
+      CompositeSerial.println(id);
+      break;
+    case ace_button::AceButton::kEventLongPressed:
+      CompositeSerial.print("Long pressed button ");
+      CompositeSerial.println(id);
+      break;   
+    case ace_button::AceButton::kEventLongReleased:
+      CompositeSerial.print("Long released button ");
+      CompositeSerial.println(id);
+      break;   
+  }
+}
+
 // ===== Main program =====
 
 void setup() {
+  buttons[0].init(BUTTON1_PIN, HIGH, 0);
+  buttons[1].init(BUTTON2_PIN, HIGH, 1);
+  buttons[2].init(BUTTON3_PIN, HIGH, 2);
+  buttons[3].init(BUTTON4_PIN, HIGH, 3);
+  buttons[4].init(BUTTON5_PIN, HIGH, 4);
+
+  pinMode(BUTTON1_PIN, INPUT_PULLUP);
+  pinMode(BUTTON2_PIN, INPUT_PULLUP);
+  pinMode(BUTTON3_PIN, INPUT_PULLUP);
+  pinMode(BUTTON4_PIN, INPUT_PULLUP);
+  pinMode(BUTTON5_PIN, INPUT_PULLUP);
+
+  ace_button::ButtonConfig* buttonConfig = ace_button::ButtonConfig::getSystemButtonConfig();
+  buttonConfig->setEventHandler(handle_button_event);
+  buttonConfig->setClickDelay(150);
+  buttonConfig->setFeature(ace_button::ButtonConfig::kFeatureClick);
+  buttonConfig->setFeature(ace_button::ButtonConfig::kFeatureDoubleClick);
+  buttonConfig->setFeature(ace_button::ButtonConfig::kFeatureLongPress);
+  buttonConfig->setFeature(ace_button::ButtonConfig::kFeatureSuppressClickBeforeDoubleClick);
+  buttonConfig->setFeature(ace_button::ButtonConfig::kFeatureSuppressAfterClick);
+  buttonConfig->setFeature(ace_button::ButtonConfig::kFeatureSuppressAfterDoubleClick);
+  buttonConfig->setFeature(ace_button::ButtonConfig::kFeatureSuppressAfterLongPress);
+
   USBComposite.clear();
   CompositeMIDI.registerComponent();
   CompositeSerial.registerComponent();
@@ -288,10 +341,4 @@ void setup() {
 
 void loop() {
   global_poll();
-
-    // for (size_t i=0; i<12; i++) {
-    //   CompositeSerial.print(pads_array[i].debug());
-    //   CompositeSerial.print(",");
-    // }
-    // CompositeSerial.println();
 }
