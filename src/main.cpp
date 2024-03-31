@@ -48,15 +48,31 @@ const int PADS_TYPE[12] = {0,1,0,1,0,0,2,0,0,0,0,0};
 const double VEL_MAP_COEFF_BIG[3] = {0.0048, 0.0025, 0.0012};
 const double VEL_MAP_COEFF_SMALL[3] = {0.0025, 0.0012, 0.0006};
 const double VEL_MAP_COEFF_SNARE[3] = {0.006, 0.0048, 0.0025};
+const double VEL_MAP_COEFF_KICK[3] = {0.0048, 0.0025, 0.0012};
+
+const int INTERFACE_MAIN = 0;
+const int INTERFACE_SETTINGS = 1;
+const int SETTINGS_CHANNEL = 0;
+const int SETTINGS_UART_MIDI_ENABLE = 1;
+const int SETTINGS_KICK_ENABLE = 2;
+const int SETTINGS_CC_ENABLE = 3;
+const int SETTINGS_VEL_CURVE = 4;
+const int SETTINGS_KICK_VEL_CURVE = 5;
 
 // ===== Flags =====
 
 bool f_uart_midi_enabled = true;
-int f_midi_channel_num = 1;
+int f_midi_channel_num = 1; 
 int f_vel_map_profile = 1;
+int f_kick_vel_map_profile = 1;
 
 bool f_cc_ped_enabled = false;
 bool f_kick_ped_enabled = true;
+
+int f_interface_level = 0; // Ranged from 0-1
+int f_bank = 0; // Ranged from 0-3
+int f_slot = 0; // Ranged from 0-3
+int f_settings_index = 0; // Ranged from 0-5
 
 // ===== Global functions declaration =====
 
@@ -67,6 +83,19 @@ void send_note_event(bool is_note_on, int note_number, int channel_number, int v
 void controller_changed(int cc_number, int channel_number, int raw_reading);
 void send_cc_event(int cc_number, int channel_number, int cc_value);
 
+int integer_shifter(int initial_val, int lower_bound, int offset, int modulus);
+int integer_shifter(int initial_val, int offset, int modulus);
+int integer_up(int initial_val, int modulus);
+int integer_down(int initial_val, int modulus);
+
+void handle_button_event(ace_button::AceButton* button, uint8_t eventType, uint8_t buttonState);
+void button1_pressed();
+void button1_long_pressed();
+void button2_pressed();
+void button3_pressed();
+void button4_pressed();
+void button5_pressed();
+
 // ===== Pads initialization =====
 
 class MIDIPad: public Pad {
@@ -74,13 +103,13 @@ class MIDIPad: public Pad {
     MIDIPad(int pin_num, float threshold_high, float threshold_low, int buffer_size, int midi_note_num) : Pad(pin_num, threshold_high, threshold_low, buffer_size, midi_note_num) {}
 
     void on_trigger(int pad_input) {
-      pads_triggered(true, get_note_num(), f_midi_channel_num, pad_input, f_vel_map_profile, 0);
+      pads_triggered(true, get_note_num(), f_midi_channel_num, pad_input, f_kick_vel_map_profile, 3);
       CompositeSerial.print("Triggered: ");
       CompositeSerial.println(get_max());
     }
 
     void on_cooldown() {
-      pads_triggered(false, get_note_num(), f_midi_channel_num, 0, f_vel_map_profile, 0);
+      pads_triggered(false, get_note_num(), f_midi_channel_num, 0, f_kick_vel_map_profile, 3);
     }
 };
 
@@ -195,7 +224,7 @@ int global_poll_return() {
 /// @param channel_number MIDI channel number 1-16. If 0, send to all channel
 /// @param raw_reading Raw analogRead value from the pad
 /// @param vel_map_profile Index of velocity mapping coefficient array. 0:soft, 1:medium, 2:hard
-/// @param pad_type 0:Big pad, 1:small pad, 2:snare pad
+/// @param pad_type 0:Big pad, 1:small pad, 2:snare pad, 3:kick pedal
 void pads_triggered(bool is_triggered, int note_number, int channel_number, int raw_reading, int vel_map_profile, int pad_type) {
   int velocity;
 
@@ -209,6 +238,9 @@ void pads_triggered(bool is_triggered, int note_number, int channel_number, int 
         break;
       case 2:
         velocity = midi_exp_vel_map(raw_reading, VEL_MAP_COEFF_SNARE[vel_map_profile]);
+        break;
+      case 3:
+        velocity = midi_exp_vel_map(raw_reading, VEL_MAP_COEFF_KICK[vel_map_profile]);
         break;
       default:
         velocity = 0;
@@ -276,6 +308,31 @@ void send_cc_event(int cc_number, int channel_number, int cc_value) {
   }
 }
 
+/// @brief Shift integer by offset while staying within certain range
+/// @param initial_val Starting value
+/// @param lower_bound Lowest number of the range
+/// @param offset How much to shift the starting value
+/// @param modulus Length of the range
+/// @return Shifted integer
+int integer_shifter(int initial_val, int lower_bound, int offset, int modulus) {
+  return (initial_val - lower_bound + (offset % modulus) + modulus) % modulus + lower_bound;
+}
+
+/// @brief Overload where lower_bound is set to 0.
+int integer_shifter(int initial_val, int offset, int modulus) {
+  return integer_shifter(initial_val, 0, offset, modulus);
+}
+
+/// @brief Increase integer by one
+int integer_up(int initial_val, int modulus) {
+  return integer_shifter(initial_val, 1, modulus);
+}
+
+/// @brief Decrease integer by one
+int integer_down(int initial_val, int modulus) {
+  return integer_shifter(initial_val, -1, modulus);
+}
+
 void handle_button_event(ace_button::AceButton* button, uint8_t eventType, uint8_t buttonState) {
   uint8_t id = button->getId();
 
@@ -284,6 +341,23 @@ void handle_button_event(ace_button::AceButton* button, uint8_t eventType, uint8
     case ace_button::AceButton::kEventClicked:
       CompositeSerial.print("Clicked button ");
       CompositeSerial.println(id);
+      switch (id) {
+        case 0:
+          button1_pressed();
+          break;
+        case 1:
+          button2_pressed();
+          break;
+        case 2:
+          button3_pressed();
+          break;
+        case 3:
+          button4_pressed();
+          break;
+        case 4:
+          button5_pressed();
+          break;
+      }
       break;
     case ace_button::AceButton::kEventDoubleClicked:
       CompositeSerial.print("Double clicked button ");
@@ -292,12 +366,114 @@ void handle_button_event(ace_button::AceButton* button, uint8_t eventType, uint8
     case ace_button::AceButton::kEventLongPressed:
       CompositeSerial.print("Long pressed button ");
       CompositeSerial.println(id);
+      switch (id) {
+        case 0:
+          button1_long_pressed();
+          break;
+      }
       break;   
     case ace_button::AceButton::kEventLongReleased:
       CompositeSerial.print("Long released button ");
       CompositeSerial.println(id);
       break;   
   }
+}
+
+// ===== Button functions =====
+
+void button1_pressed() {
+  switch (f_interface_level) {
+    case INTERFACE_MAIN:
+      // bank change function
+      break;
+    case INTERFACE_SETTINGS:
+      f_settings_index = integer_up(f_settings_index, 6);
+  }
+}
+
+void button1_long_pressed() {
+  if (f_interface_level == INTERFACE_MAIN) {
+    f_interface_level = INTERFACE_SETTINGS;
+  }
+}
+
+void button2_pressed() {
+  switch (f_interface_level) {
+    case INTERFACE_MAIN:
+      // slot change function
+      break;
+    case INTERFACE_SETTINGS:
+      switch (f_settings_index) {
+        case SETTINGS_CHANNEL:
+          f_midi_channel_num = integer_up(f_midi_channel_num, 17);
+          break;
+        case SETTINGS_KICK_ENABLE:
+          f_kick_ped_enabled = !f_kick_ped_enabled;
+          break;
+        case SETTINGS_UART_MIDI_ENABLE:
+          f_uart_midi_enabled = !f_uart_midi_enabled;
+          break;
+        case SETTINGS_CC_ENABLE:
+          f_cc_ped_enabled = !f_cc_ped_enabled;
+          break;
+        case SETTINGS_VEL_CURVE:
+          f_vel_map_profile = integer_up(f_vel_map_profile, 3);
+          break;
+        case SETTINGS_KICK_VEL_CURVE:
+          f_kick_vel_map_profile = integer_up(f_kick_vel_map_profile, 3);
+          break;
+      }
+  }
+}
+
+void button3_pressed() {
+  switch (f_interface_level) {
+    case INTERFACE_MAIN:
+      // slot change function
+      break;
+    case INTERFACE_SETTINGS:
+      switch (f_settings_index) {
+        case SETTINGS_CHANNEL:
+          f_midi_channel_num = integer_down(f_midi_channel_num, 17);
+          break;
+        case SETTINGS_KICK_ENABLE:
+          f_kick_ped_enabled = !f_kick_ped_enabled;
+          break;
+        case SETTINGS_UART_MIDI_ENABLE:
+          f_uart_midi_enabled = !f_uart_midi_enabled;
+          break;
+        case SETTINGS_CC_ENABLE:
+          f_cc_ped_enabled = !f_cc_ped_enabled;
+          break;
+        case SETTINGS_VEL_CURVE:
+          f_vel_map_profile = integer_down(f_vel_map_profile, 3);
+          break;
+        case SETTINGS_KICK_VEL_CURVE:
+          f_kick_vel_map_profile = integer_down(f_kick_vel_map_profile, 3);
+          break;
+      }
+  }  
+}
+
+void button4_pressed() {
+  switch (f_interface_level) {
+    case INTERFACE_MAIN:
+      // slot change function
+      break;
+    case INTERFACE_SETTINGS:
+      f_interface_level = INTERFACE_MAIN;
+  }  
+}
+
+void button5_pressed() {
+  switch (f_interface_level) {
+    case INTERFACE_MAIN:
+      // slot change function
+      break;
+    case INTERFACE_SETTINGS:
+      // save settings to flash memory
+      break;
+  }  
 }
 
 // ===== Main program =====
