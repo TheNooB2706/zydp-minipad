@@ -59,6 +59,8 @@ const int SETTINGS_CC_ENABLE = 3;
 const int SETTINGS_VEL_CURVE = 4;
 const int SETTINGS_KICK_VEL_CURVE = 5;
 
+const int FLASH_SIGNATURE = 0xA07C9C9A;
+
 // ===== Flags =====
 
 bool f_uart_midi_enabled = true;
@@ -73,6 +75,30 @@ int f_interface_level = 0; // Ranged from 0-1
 int f_bank = 0; // Ranged from 0-3
 int f_slot = 0; // Ranged from 0-3
 int f_settings_index = 0; // Ranged from 0-5
+
+// ===== Configuration storage struct =====
+
+struct configStructure {
+  bool uart_midi_enabled = f_uart_midi_enabled;
+  int midi_channel_num = f_midi_channel_num;
+  int vel_map_profile = f_vel_map_profile;
+  int kick_vel_map_profile = f_kick_vel_map_profile;
+  bool cc_ped_enabled = f_cc_ped_enabled;
+  bool kick_ped_enabled = f_kick_ped_enabled;
+  /// @brief Bank -> Slot -> Pads
+  int mapping_bank[4][4][12] = {
+    {
+      {43, 41, 36, 41, 43, 47, 38, 47, 49, 46, 42, 51},
+      {43, 41, 37, 41, 43, 47, 38, 47, 49, 46, 42, 51},
+      {46, 37, 38, 41, 43, 42, 50, 45, 49, 54, 57, 51},
+      {46, 37, 38, 41, 43, 42, 50, 45, 49, 55, 57, 51}
+    }
+  };
+  int mapping_bank_kick[4][4] = {{36, 36, 36, 36}};
+  int mapping_bank_cc[4][4] = {{4, 4, 4, 4}};
+};
+
+configStructure config;
 
 // ===== Global functions declaration =====
 
