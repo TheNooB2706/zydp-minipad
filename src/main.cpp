@@ -44,6 +44,10 @@ const int LED_RED_PIN = PB4;
 const int LED_GREEN_PIN = PB3;
 const int LED_BLUE_PIN = PA15;
 
+const int LED_BLINK_FAST_PERIOD = 100;
+const int LED_BLINK_SLOW_PERIOD = 200;
+const int LED_SLOT_COLOR[4][3] = {{1,0,0},{0,1,0},{0,0,1},{1,0,1}}; 
+
 const int PADS_TYPE[12] = {0,1,0,1,0,0,2,0,0,0,0,0};
 const double VEL_MAP_COEFF_BIG[3] = {0.0048, 0.0025, 0.0012};
 const double VEL_MAP_COEFF_SMALL[3] = {0.0025, 0.0012, 0.0006};
@@ -211,6 +215,8 @@ void global_poll() {
   for (uint8_t i = 0; i < NUM_BUTTONS; i++) {
     buttons[i].check();
   }
+
+  led.poll();
 }
 
 /// @brief Same as global_poll, but return the pad/pedal that is triggered/changed
@@ -240,6 +246,8 @@ int global_poll_return() {
   for (uint8_t i = 0; i < NUM_BUTTONS; i++) {
     buttons[i].check();
   }
+
+  led.poll();
 
   return -1;
 }
@@ -411,15 +419,20 @@ void button1_pressed() {
   switch (f_interface_level) {
     case INTERFACE_MAIN:
       // bank change function
+      f_bank = integer_up(f_bank, 4);
+      led.on(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2]);
+      led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], f_bank+1, LED_BLINK_SLOW_PERIOD, true);
       break;
     case INTERFACE_SETTINGS:
       f_settings_index = integer_up(f_settings_index, 6);
+      led.blink(1,1,1,f_settings_index+1, LED_BLINK_SLOW_PERIOD, true);
   }
 }
 
 void button1_long_pressed() {
   if (f_interface_level == INTERFACE_MAIN) {
     f_interface_level = INTERFACE_SETTINGS;
+    led.on(1,1,1);
   }
 }
 
@@ -427,6 +440,9 @@ void button2_pressed() {
   switch (f_interface_level) {
     case INTERFACE_MAIN:
       // slot change function
+      f_slot = 0;
+      led.on(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2]);
+      led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], f_bank+1, LED_BLINK_SLOW_PERIOD, true);
       break;
     case INTERFACE_SETTINGS:
       switch (f_settings_index) {
@@ -456,6 +472,9 @@ void button3_pressed() {
   switch (f_interface_level) {
     case INTERFACE_MAIN:
       // slot change function
+      f_slot = 1;
+      led.on(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2]);
+      led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], f_bank+1, LED_BLINK_SLOW_PERIOD, true);
       break;
     case INTERFACE_SETTINGS:
       switch (f_settings_index) {
@@ -485,9 +504,14 @@ void button4_pressed() {
   switch (f_interface_level) {
     case INTERFACE_MAIN:
       // slot change function
+      f_slot = 2;
+      led.on(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2]);
+      led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], f_bank+1, LED_BLINK_SLOW_PERIOD, true);
       break;
     case INTERFACE_SETTINGS:
       f_interface_level = INTERFACE_MAIN;
+      led.on(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2]);
+      led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], f_bank+1, LED_BLINK_SLOW_PERIOD, true);
   }  
 }
 
@@ -495,6 +519,9 @@ void button5_pressed() {
   switch (f_interface_level) {
     case INTERFACE_MAIN:
       // slot change function
+      f_slot = 3;
+      led.on(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2]);
+      led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], f_bank+1, LED_BLINK_SLOW_PERIOD, true);
       break;
     case INTERFACE_SETTINGS:
       // save settings to flash memory
@@ -505,6 +532,10 @@ void button5_pressed() {
 // ===== Main program =====
 
 void setup() {
+  // LED setup
+  led.on(1,0,0);
+
+  // Button setup
   buttons[0].init(BUTTON1_PIN, HIGH, 0);
   buttons[1].init(BUTTON2_PIN, HIGH, 1);
   buttons[2].init(BUTTON3_PIN, HIGH, 2);
@@ -528,6 +559,8 @@ void setup() {
   buttonConfig->setFeature(ace_button::ButtonConfig::kFeatureSuppressAfterDoubleClick);
   buttonConfig->setFeature(ace_button::ButtonConfig::kFeatureSuppressAfterLongPress);
 
+  // USB setup
+
   USBComposite.clear();
   CompositeMIDI.registerComponent();
   CompositeSerial.registerComponent();
@@ -537,6 +570,8 @@ void setup() {
   USBComposite.setManufacturerString("ZYDP");
   USBComposite.setProductString("miniPad alpha");
   USBComposite.begin();
+
+  // UARTMIDI setup
 
   UARTMIDI.begin();
 }
