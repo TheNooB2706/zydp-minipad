@@ -126,6 +126,8 @@ void button3_pressed();
 void button4_pressed();
 void button5_pressed();
 
+void load_bank_mapping();
+
 // ===== Pads initialization =====
 
 class MIDIPad: public Pad {
@@ -418,8 +420,8 @@ void handle_button_event(ace_button::AceButton* button, uint8_t eventType, uint8
 void button1_pressed() {
   switch (f_interface_level) {
     case INTERFACE_MAIN:
-      // bank change function
       f_bank = integer_up(f_bank, 4);
+      load_bank_mapping();
       led.on(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2]);
       led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], f_bank+1, LED_BLINK_SLOW_PERIOD, true);
       break;
@@ -439,8 +441,8 @@ void button1_long_pressed() {
 void button2_pressed() {
   switch (f_interface_level) {
     case INTERFACE_MAIN:
-      // slot change function
       f_slot = 0;
+      load_bank_mapping();
       led.on(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2]);
       led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], f_bank+1, LED_BLINK_SLOW_PERIOD, true);
       break;
@@ -471,8 +473,8 @@ void button2_pressed() {
 void button3_pressed() {
   switch (f_interface_level) {
     case INTERFACE_MAIN:
-      // slot change function
       f_slot = 1;
+      load_bank_mapping();
       led.on(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2]);
       led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], f_bank+1, LED_BLINK_SLOW_PERIOD, true);
       break;
@@ -503,8 +505,8 @@ void button3_pressed() {
 void button4_pressed() {
   switch (f_interface_level) {
     case INTERFACE_MAIN:
-      // slot change function
       f_slot = 2;
+      load_bank_mapping();
       led.on(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2]);
       led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], f_bank+1, LED_BLINK_SLOW_PERIOD, true);
       break;
@@ -518,8 +520,8 @@ void button4_pressed() {
 void button5_pressed() {
   switch (f_interface_level) {
     case INTERFACE_MAIN:
-      // slot change function
       f_slot = 3;
+      load_bank_mapping();
       led.on(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2]);
       led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], f_bank+1, LED_BLINK_SLOW_PERIOD, true);
       break;
@@ -527,6 +529,14 @@ void button5_pressed() {
       // save settings to flash memory
       break;
   }  
+}
+
+void load_bank_mapping() {
+  for (int i=0; i<12; i++) {
+    pads_array[i].set_note_num(config.mapping_bank[f_bank][f_slot][i]);
+  }
+  kick_pad.set_note_num(config.mapping_bank_kick[f_bank][f_slot]);
+  cc_pedal.set_cc_num(config.mapping_bank_cc[f_bank][f_slot]);
 }
 
 // ===== Main program =====
