@@ -12,10 +12,10 @@ class CController {
 
         int poll(unsigned int sample_period_micro);
 
-        /// @brief Get MIDI CC number assigned to this pad.
+        /// @brief Get MIDI CC number assigned to this controller.
         int get_cc_num();
 
-        /// @brief Assign new MIDI CC number to this pad.
+        /// @brief Assign new MIDI CC number to this controller.
         void set_cc_num(int new_cc_num);
 
         // Overload the following function to be executed in poll when controller changed.
