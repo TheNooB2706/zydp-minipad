@@ -128,7 +128,9 @@ void button1_pressed();
 void button1_long_pressed();
 void button1_double_clicked();
 void button2_pressed();
+void button2_long_pressed();
 void button3_pressed();
+void button3_long_pressed();
 void button4_pressed();
 void button5_pressed();
 
@@ -418,6 +420,12 @@ void handle_button_event(ace_button::AceButton* button, uint8_t eventType, uint8
         case 0:
           button1_long_pressed();
           break;
+        case 1:
+          button2_long_pressed();
+          break;
+        case 2:
+          button3_long_pressed();
+          break;
       }
       break;   
     case ace_button::AceButton::kEventLongReleased:
@@ -533,6 +541,33 @@ void button2_pressed() {
   }
 }
 
+void button2_long_pressed() {
+  switch (f_interface_level) {
+    case INTERFACE_EDIT_BANK:
+      if (f_sensor_selected) {
+        if (f_selected_sensor_id < 12) { // Pads selected
+          int note_num = config.mapping_bank[f_bank][f_slot][f_selected_sensor_id];
+          note_num = integer_shifter(note_num, 12, 128);
+          config.mapping_bank[f_bank][f_slot][f_selected_sensor_id] = note_num;
+          pads_array[f_selected_sensor_id].set_note_num(note_num);
+        }
+        else if (f_selected_sensor_id == 12) { // Kick pedal selected
+          int note_num = config.mapping_bank_kick[f_bank][f_slot];
+          note_num = integer_shifter(note_num, 12, 128);
+          config.mapping_bank_kick[f_bank][f_slot] = note_num;
+          kick_pad.set_note_num(note_num);
+        }
+        else if (f_selected_sensor_id == 13) { // CC pedal selected
+          int cc_num = config.mapping_bank_cc[f_bank][f_slot];
+          cc_num = integer_shifter(cc_num, 12, 128);
+          config.mapping_bank_cc[f_bank][f_slot] = cc_num;
+          cc_pedal.set_cc_num(cc_num);
+        }
+      }
+      break;
+  }
+}
+
 void button3_pressed() {
   switch (f_interface_level) {
     case INTERFACE_MAIN:
@@ -586,6 +621,33 @@ void button3_pressed() {
       }
       break;
   }  
+}
+
+void button3_long_pressed() {
+  switch (f_interface_level) {
+    case INTERFACE_EDIT_BANK:
+      if (f_sensor_selected) {
+        if (f_selected_sensor_id < 12) { // Pads selected
+          int note_num = config.mapping_bank[f_bank][f_slot][f_selected_sensor_id];
+          note_num = integer_shifter(note_num, -12, 128);
+          config.mapping_bank[f_bank][f_slot][f_selected_sensor_id] = note_num;
+          pads_array[f_selected_sensor_id].set_note_num(note_num);
+        }
+        else if (f_selected_sensor_id == 12) { // Kick pedal selected
+          int note_num = config.mapping_bank_kick[f_bank][f_slot];
+          note_num = integer_shifter(note_num, -12, 128);
+          config.mapping_bank_kick[f_bank][f_slot] = note_num;
+          kick_pad.set_note_num(note_num);
+        }
+        else if (f_selected_sensor_id == 13) { // CC pedal selected
+          int cc_num = config.mapping_bank_cc[f_bank][f_slot];
+          cc_num = integer_shifter(cc_num, -12, 128);
+          config.mapping_bank_cc[f_bank][f_slot] = cc_num;
+          cc_pedal.set_cc_num(cc_num);
+        }
+      }
+      break;
+  }
 }
 
 void button4_pressed() {
