@@ -46,6 +46,7 @@ const int LED_BLUE_PIN = PA15;
 
 const int LED_BLINK_FAST_PERIOD = 100;
 const int LED_BLINK_SLOW_PERIOD = 200;
+const int LED_BLINK_VSLOW_PERIOD = 1000;
 const int LED_SLOT_COLOR[4][3] = {{1,0,0},{0,1,0},{0,0,1},{1,0,1}}; 
 
 const int PADS_TYPE[12] = {0,1,0,1,0,0,2,0,0,0,0,0};
@@ -56,6 +57,7 @@ const double VEL_MAP_COEFF_KICK[3] = {0.0048, 0.0025, 0.0012};
 
 const int INTERFACE_MAIN = 0;
 const int INTERFACE_SETTINGS = 1;
+const int INTERFACE_EDIT_BANK = 2;
 const int SETTINGS_CHANNEL = 0;
 const int SETTINGS_UART_MIDI_ENABLE = 1;
 const int SETTINGS_KICK_ENABLE = 2;
@@ -79,6 +81,9 @@ int f_interface_level = 0; // Ranged from 0-1
 int f_bank = 0; // Ranged from 0-3
 int f_slot = 0; // Ranged from 0-3
 int f_settings_index = 0; // Ranged from 0-5
+
+int f_selected_sensor_id = 0; 
+bool f_sensor_selected = false;
 
 // ===== Configuration storage struct =====
 
@@ -121,12 +126,14 @@ int integer_down(int initial_val, int modulus);
 void handle_button_event(ace_button::AceButton* button, uint8_t eventType, uint8_t buttonState);
 void button1_pressed();
 void button1_long_pressed();
+void button1_double_clicked();
 void button2_pressed();
 void button3_pressed();
 void button4_pressed();
 void button5_pressed();
 
 void load_bank_mapping();
+void edit_bank_mapping();
 
 // ===== Pads initialization =====
 
@@ -398,6 +405,11 @@ void handle_button_event(ace_button::AceButton* button, uint8_t eventType, uint8
     case ace_button::AceButton::kEventDoubleClicked:
       CompositeSerial.print("Double clicked button ");
       CompositeSerial.println(id);
+      switch (id) {
+        case 0:
+          button1_double_clicked();
+          break;
+      }
       break;
     case ace_button::AceButton::kEventLongPressed:
       CompositeSerial.print("Long pressed button ");
@@ -412,6 +424,27 @@ void handle_button_event(ace_button::AceButton* button, uint8_t eventType, uint8
       CompositeSerial.print("Long released button ");
       CompositeSerial.println(id);
       break;   
+  }
+}
+
+void load_bank_mapping() {
+  for (int i=0; i<12; i++) {
+    pads_array[i].set_note_num(config.mapping_bank[f_bank][f_slot][i]);
+  }
+  kick_pad.set_note_num(config.mapping_bank_kick[f_bank][f_slot]);
+  cc_pedal.set_cc_num(config.mapping_bank_cc[f_bank][f_slot]);
+}
+
+void edit_bank_mapping() {
+  if (!f_sensor_selected) {
+    int id = global_poll_return();
+    if (id != -1) {
+      f_selected_sensor_id = id;
+      f_sensor_selected = true;
+    }
+  }
+  else {
+    global_poll();
   }
 }
 
@@ -435,6 +468,13 @@ void button1_long_pressed() {
   if (f_interface_level == INTERFACE_MAIN) {
     f_interface_level = INTERFACE_SETTINGS;
     led.on(1,1,1);
+  }
+}
+
+void button1_double_clicked() {
+  if (f_interface_level == INTERFACE_MAIN) {
+    f_interface_level = INTERFACE_EDIT_BANK;
+    //TODO infinite blink led
   }
 }
 
@@ -467,6 +507,29 @@ void button2_pressed() {
           f_kick_vel_map_profile = integer_up(f_kick_vel_map_profile, 3);
           break;
       }
+      break;
+    case INTERFACE_EDIT_BANK:
+      if (f_sensor_selected) {
+        if (f_selected_sensor_id < 12) { // Pads selected
+          int note_num = config.mapping_bank[f_bank][f_slot][f_selected_sensor_id];
+          note_num = integer_up(note_num, 128);
+          config.mapping_bank[f_bank][f_slot][f_selected_sensor_id] = note_num;
+          pads_array[f_selected_sensor_id].set_note_num(note_num);
+        }
+        else if (f_selected_sensor_id == 12) { // Kick pedal selected
+          int note_num = config.mapping_bank_kick[f_bank][f_slot];
+          note_num = integer_up(note_num, 128);
+          config.mapping_bank_kick[f_bank][f_slot] = note_num;
+          kick_pad.set_note_num(note_num);
+        }
+        else if (f_selected_sensor_id == 13) { // CC pedal selected
+          int cc_num = config.mapping_bank_cc[f_bank][f_slot];
+          cc_num = integer_up(cc_num, 128);
+          config.mapping_bank_cc[f_bank][f_slot] = cc_num;
+          cc_pedal.set_cc_num(cc_num);
+        }
+      }
+      break;
   }
 }
 
@@ -499,6 +562,29 @@ void button3_pressed() {
           f_kick_vel_map_profile = integer_down(f_kick_vel_map_profile, 3);
           break;
       }
+      break;
+    case INTERFACE_EDIT_BANK:
+      if (f_sensor_selected) {
+        if (f_selected_sensor_id < 12) { // Pads selected
+          int note_num = config.mapping_bank[f_bank][f_slot][f_selected_sensor_id];
+          note_num = integer_down(note_num, 128);
+          config.mapping_bank[f_bank][f_slot][f_selected_sensor_id] = note_num;
+          pads_array[f_selected_sensor_id].set_note_num(note_num);
+        }
+        else if (f_selected_sensor_id == 12) { // Kick pedal selected
+          int note_num = config.mapping_bank_kick[f_bank][f_slot];
+          note_num = integer_down(note_num, 128);
+          config.mapping_bank_kick[f_bank][f_slot] = note_num;
+          kick_pad.set_note_num(note_num);
+        }
+        else if (f_selected_sensor_id == 13) { // CC pedal selected
+          int cc_num = config.mapping_bank_cc[f_bank][f_slot];
+          cc_num = integer_down(cc_num, 128);
+          config.mapping_bank_cc[f_bank][f_slot] = cc_num;
+          cc_pedal.set_cc_num(cc_num);
+        }
+      }
+      break;
   }  
 }
 
@@ -514,6 +600,14 @@ void button4_pressed() {
       f_interface_level = INTERFACE_MAIN;
       led.on(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2]);
       led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], f_bank+1, LED_BLINK_SLOW_PERIOD, true);
+      break;
+    case INTERFACE_EDIT_BANK:
+      f_interface_level = INTERFACE_MAIN;
+      f_sensor_selected = false;
+      f_selected_sensor_id = 0;
+      led.on(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2]);
+      led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], f_bank+1, LED_BLINK_SLOW_PERIOD, true);
+      break;
   }  
 }
 
@@ -529,14 +623,6 @@ void button5_pressed() {
       // save settings to flash memory
       break;
   }  
-}
-
-void load_bank_mapping() {
-  for (int i=0; i<12; i++) {
-    pads_array[i].set_note_num(config.mapping_bank[f_bank][f_slot][i]);
-  }
-  kick_pad.set_note_num(config.mapping_bank_kick[f_bank][f_slot]);
-  cc_pedal.set_cc_num(config.mapping_bank_cc[f_bank][f_slot]);
 }
 
 // ===== Main program =====
@@ -587,5 +673,13 @@ void setup() {
 }
 
 void loop() {
-  global_poll();
+  switch (f_interface_level) {
+    case INTERFACE_MAIN:
+    case INTERFACE_SETTINGS:
+      global_poll();
+      break;
+    case INTERFACE_EDIT_BANK:
+      edit_bank_mapping();
+      break;
+  }
 }
