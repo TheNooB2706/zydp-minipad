@@ -2,6 +2,7 @@
 #include <USBComposite.h>
 #include <MIDI.h>
 #include <AceButton.h>
+#include <limits>
 
 #include <pad.hpp>
 #include <ccontroller.hpp>
@@ -482,7 +483,8 @@ void button1_long_pressed() {
 void button1_double_clicked() {
   if (f_interface_level == INTERFACE_MAIN) {
     f_interface_level = INTERFACE_EDIT_BANK;
-    //TODO infinite blink led
+    //infinite blink led
+    led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], std::numeric_limits<int>::max(), LED_BLINK_VSLOW_PERIOD, true);
   }
 }
 
@@ -682,7 +684,7 @@ void button5_pressed() {
       led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], f_bank+1, LED_BLINK_SLOW_PERIOD, true);
       break;
     case INTERFACE_SETTINGS:
-      // save settings to flash memory
+      // TODO save settings to flash memory
       break;
   }  
 }
