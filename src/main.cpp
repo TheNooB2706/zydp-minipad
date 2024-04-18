@@ -2,6 +2,7 @@
 #include <USBComposite.h>
 #include <MIDI.h>
 #include <AceButton.h>
+#include <ArduinoJson.h>
 #include <limits>
 
 #include <pad.hpp>
@@ -137,6 +138,9 @@ void button5_pressed();
 
 void load_bank_mapping();
 void edit_bank_mapping();
+
+void send_json_config();
+void receive_json_config();
 
 // ===== Pads initialization =====
 
@@ -687,6 +691,62 @@ void button5_pressed() {
       // TODO save settings to flash memory
       break;
   }  
+}
+
+// ===== Serial configuration =====
+
+void send_json_config() {
+  JsonDocument doc;
+
+  doc["uart_midi_enabled"] = config.uart_midi_enabled;
+  doc["midi_channel_num"] = config.midi_channel_num;
+  doc["vel_map_profile"] = config.vel_map_profile;
+  doc["kick_vel_map_profile"] = config.kick_vel_map_profile;
+  doc["cc_ped_enabled"] = config.cc_ped_enabled;
+  doc["kick_ped_enabled"] = config.kick_ped_enabled;
+  
+  // JsonArray mapping_bank = doc.createNestedArray("mapping_bank");
+  // JsonArray mapping_bank_kick = doc.createNestedArray("mapping_bank_kick");
+  // JsonArray mapping_bank_cc = doc.createNestedArray("mapping_bank_cc");
+
+  for (int bank=0; bank<4; bank++) {
+    for (int slot=0; slot<4; slot++) {
+      for (int i=0; i<12; i++) {
+        doc["mapping_bank"][bank][slot][i] = config.mapping_bank[bank][slot][i];
+      }
+      doc["mapping_bank_kick"][bank][slot] = config.mapping_bank_kick[bank][slot];
+      doc["mapping_bank_cc"][bank][slot] = config.mapping_bank_cc[bank][slot];
+    }
+  }
+
+  serializeJson(doc, CompositeSerial);
+}
+
+void receive_json_config() {
+  JsonDocument doc;
+  const auto deser_err = deserializeJson(doc, CompositeSerial);
+  if (!deser_err) {
+    config.uart_midi_enabled = doc["uart_midi_enabled"];
+    config.midi_channel_num = doc["midi_channel_num"];
+    config.vel_map_profile = doc["vel_map_profile"];
+    config.kick_vel_map_profile = doc["kick_vel_map_profile"];
+    config.cc_ped_enabled = doc["cc_ped_enabled"];
+    config.kick_ped_enabled = doc["kick_ped_enabled"];
+    
+    // JsonArray mapping_bank = doc.createNestedArray("mapping_bank");
+    // JsonArray mapping_bank_kick = doc.createNestedArray("mapping_bank_kick");
+    // JsonArray mapping_bank_cc = doc.createNestedArray("mapping_bank_cc");
+
+    for (int bank=0; bank<4; bank++) {
+      for (int slot=0; slot<4; slot++) {
+        for (int i=0; i<12; i++) {
+          config.mapping_bank[bank][slot][i] = doc["mapping_bank"][bank][slot][i];
+        }
+        config.mapping_bank_kick[bank][slot] = doc["mapping_bank_kick"][bank][slot];
+        config.mapping_bank_cc[bank][slot] = doc["mapping_bank_cc"][bank][slot];
+      }
+    } 
+  }
 }
 
 // ===== Main program =====
