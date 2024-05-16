@@ -141,6 +141,7 @@ void edit_bank_mapping();
 
 void send_json_config();
 void receive_json_config();
+void serial_command_poll();
 
 // ===== Pads initialization =====
 
@@ -233,6 +234,8 @@ void global_poll() {
   }
 
   led.poll();
+
+  serial_command_poll();
 }
 
 /// @brief Same as global_poll, but return the pad/pedal that is triggered/changed
@@ -264,6 +267,8 @@ int global_poll_return() {
   }
 
   led.poll();
+  
+  serial_command_poll();
 
   return -1;
 }
@@ -704,10 +709,6 @@ void send_json_config() {
   doc["kick_vel_map_profile"] = config.kick_vel_map_profile;
   doc["cc_ped_enabled"] = config.cc_ped_enabled;
   doc["kick_ped_enabled"] = config.kick_ped_enabled;
-  
-  // JsonArray mapping_bank = doc.createNestedArray("mapping_bank");
-  // JsonArray mapping_bank_kick = doc.createNestedArray("mapping_bank_kick");
-  // JsonArray mapping_bank_cc = doc.createNestedArray("mapping_bank_cc");
 
   for (int bank=0; bank<4; bank++) {
     for (int slot=0; slot<4; slot++) {
@@ -724,7 +725,11 @@ void send_json_config() {
 
 void receive_json_config() {
   JsonDocument doc;
-  const auto deser_err = deserializeJson(doc, CompositeSerial);
+
+  String raw_recv = CompositeSerial.readStringUntil('}');
+  raw_recv += '}';
+
+  const auto deser_err = deserializeJson(doc, raw_recv);
   if (!deser_err) {
     config.uart_midi_enabled = doc["uart_midi_enabled"];
     config.midi_channel_num = doc["midi_channel_num"];
@@ -732,10 +737,6 @@ void receive_json_config() {
     config.kick_vel_map_profile = doc["kick_vel_map_profile"];
     config.cc_ped_enabled = doc["cc_ped_enabled"];
     config.kick_ped_enabled = doc["kick_ped_enabled"];
-    
-    // JsonArray mapping_bank = doc.createNestedArray("mapping_bank");
-    // JsonArray mapping_bank_kick = doc.createNestedArray("mapping_bank_kick");
-    // JsonArray mapping_bank_cc = doc.createNestedArray("mapping_bank_cc");
 
     for (int bank=0; bank<4; bank++) {
       for (int slot=0; slot<4; slot++) {
@@ -746,6 +747,26 @@ void receive_json_config() {
         config.mapping_bank_cc[bank][slot] = doc["mapping_bank_cc"][bank][slot];
       }
     } 
+    
+    load_bank_mapping();
+    CompositeSerial.println("S");
+  }
+  else {
+    CompositeSerial.println("E");
+  }
+}
+
+void serial_command_poll() {
+  if (CompositeSerial.available()) {
+    char cmd = CompositeSerial.read();
+    switch (cmd) {
+      case 'g':
+        send_json_config();
+        break;
+      case 's':
+        receive_json_config();
+        break;
+    }
   }
 }
 
