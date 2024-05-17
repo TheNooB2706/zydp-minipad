@@ -69,6 +69,7 @@ const int SETTINGS_VEL_CURVE = 4;
 const int SETTINGS_KICK_VEL_CURVE = 5;
 
 const uint32 FLASH_SIGNATURE = 0xA07C9C9A;
+const uint16 CONFIG_ADDRESS = sizeof(FLASH_SIGNATURE)/2;
 
 // ===== Flags =====
 
@@ -92,13 +93,13 @@ bool f_sensor_selected = false;
 
 struct configStructure {
   bool uart_midi_enabled = f_uart_midi_enabled;
-  int midi_channel_num = f_midi_channel_num;
-  int vel_map_profile = f_vel_map_profile;
-  int kick_vel_map_profile = f_kick_vel_map_profile;
+  uint8 midi_channel_num = f_midi_channel_num;
+  uint8 vel_map_profile = f_vel_map_profile;
+  uint8 kick_vel_map_profile = f_kick_vel_map_profile;
   bool cc_ped_enabled = f_cc_ped_enabled;
   bool kick_ped_enabled = f_kick_ped_enabled;
   /// @brief Bank -> Slot -> Pads
-  int mapping_bank[4][4][12] = {
+  uint8 mapping_bank[4][4][12] = {
     {
       {43, 41, 36, 41, 43, 47, 38, 47, 49, 46, 42, 51},
       {43, 41, 37, 41, 43, 47, 38, 47, 49, 46, 42, 51},
@@ -106,8 +107,8 @@ struct configStructure {
       {46, 37, 38, 41, 43, 42, 50, 45, 49, 55, 57, 51}
     }
   };
-  int mapping_bank_kick[4][4] = {{36, 36, 36, 36}};
-  int mapping_bank_cc[4][4] = {{4, 4, 4, 4}};
+  uint8 mapping_bank_kick[4][4] = {{36, 36, 36, 36}};
+  uint8 mapping_bank_cc[4][4] = {{4, 4, 4, 4}};
 };
 
 configStructure config;
@@ -141,6 +142,7 @@ void load_bank_mapping();
 void edit_bank_mapping();
 
 void send_json_config();
+void send_json_config(configStructure config);
 void receive_json_config();
 void serial_command_poll();
 
@@ -473,17 +475,21 @@ void edit_bank_mapping() {
 }
 
 void write_config_struct(uint16 addr, configStructure *config) {
-  size_t size = sizeof(configStructure)/16;
+  size_t size = sizeof(configStructure)/2;
 
   uint16 *ptr = (uint16 *)config;
 
   for (size_t i=0; i<size; i++) {
-    EEPROM.update(addr++, *(ptr++));
+    uint16 status = EEPROM.update(addr++, *(ptr++));
+    if ((status != EEPROM_SAME_VALUE) && (status != FLASH_COMPLETE) && (status != EEPROM_OK)) {
+      CompositeSerial.print("EEPROM Error Code: ");
+      CompositeSerial.println(status);
+    }
   }
 }
 
 void read_config_struct(uint16 addr, configStructure *config) {
-  size_t size = sizeof(configStructure)/16;
+  size_t size = sizeof(configStructure)/2;
 
   uint16 *ptr = (uint16 *)config;
 
@@ -499,7 +505,12 @@ void save_all_config() {
   config.kick_vel_map_profile = f_kick_vel_map_profile;
   config.cc_ped_enabled = f_cc_ped_enabled;
   config.kick_ped_enabled = f_kick_ped_enabled;
-  write_config_struct(sizeof(FLASH_SIGNATURE), &config);
+  write_config_struct(CONFIG_ADDRESS, &config);
+  configStructure tempconfig;
+  CompositeSerial.println();
+  CompositeSerial.println("Updated config:");
+  read_config_struct(CONFIG_ADDRESS, &tempconfig);
+  send_json_config(tempconfig);
 }
 
 void load_all_config() {
@@ -748,6 +759,10 @@ void button5_pressed() {
 // ===== Serial configuration =====
 
 void send_json_config() {
+  send_json_config(config);
+}
+
+void send_json_config(configStructure config) {
   JsonDocument doc;
 
   doc["uart_midi_enabled"] = config.uart_midi_enabled;
@@ -795,7 +810,7 @@ void receive_json_config() {
       }
     } 
     
-    load_bank_mapping();
+    load_all_config();
     CompositeSerial.println("S");
   }
   else {
@@ -812,6 +827,9 @@ void serial_command_poll() {
         break;
       case 's':
         receive_json_config();
+        break;
+      case 'f':
+        EEPROM.format();
         break;
     }
   }
@@ -867,10 +885,10 @@ void setup() {
   uint32 signature = read_uint32(0);
   if (signature != FLASH_SIGNATURE) { // First run of the code
     write_uint32(0, FLASH_SIGNATURE);
-    write_config_struct(sizeof(FLASH_SIGNATURE), &config);
+    write_config_struct(CONFIG_ADDRESS, &config);
   }
   else {
-    read_config_struct(sizeof(FLASH_SIGNATURE), &config);
+    read_config_struct(CONFIG_ADDRESS, &config);
     load_all_config();
   }
 }
