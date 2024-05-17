@@ -53,10 +53,10 @@ const int LED_BLINK_VSLOW_PERIOD = 1000;
 const int LED_SLOT_COLOR[4][3] = {{1,0,0},{0,1,0},{0,0,1},{1,0,1}}; 
 
 const int PADS_TYPE[12] = {0,1,0,1,0,0,2,0,0,0,0,0};
-const double VEL_MAP_COEFF_BIG[3] = {0.0048, 0.0025, 0.0012};
-const double VEL_MAP_COEFF_SMALL[3] = {0.0025, 0.0012, 0.0006};
-const double VEL_MAP_COEFF_SNARE[3] = {0.006, 0.0048, 0.0025};
-const double VEL_MAP_COEFF_KICK[3] = {0.0048, 0.0025, 0.0012};
+const double VEL_MAP_COEFF_BIG[3] = {0.0025, 0.0012, 0.0006};
+const double VEL_MAP_COEFF_SMALL[3] = {0.0009, 0.0006, 0.0003};
+const double VEL_MAP_COEFF_SNARE[3] = {0.006, 0.0037, 0.0024};
+const double VEL_MAP_COEFF_KICK[3] = {0.0025, 0.0012, 0.0006};
 
 const int INTERFACE_MAIN = 0;
 const int INTERFACE_SETTINGS = 1;
