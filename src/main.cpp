@@ -9,6 +9,7 @@
 #include <ccontroller.hpp>
 #include <midi-util.hpp>
 #include <led-indicator.hpp>
+#include <EEPROM-util.hpp>
 
 USBMIDI CompositeMIDI;
 USBCompositeSerial CompositeSerial;
@@ -67,7 +68,7 @@ const int SETTINGS_CC_ENABLE = 3;
 const int SETTINGS_VEL_CURVE = 4;
 const int SETTINGS_KICK_VEL_CURVE = 5;
 
-const int FLASH_SIGNATURE = 0xA07C9C9A;
+const uint32 FLASH_SIGNATURE = 0xA07C9C9A;
 
 // ===== Flags =====
 
@@ -142,6 +143,11 @@ void edit_bank_mapping();
 void send_json_config();
 void receive_json_config();
 void serial_command_poll();
+
+void write_config_struct(uint16 addr, configStructure *config);
+void read_config_struct(uint16 addr, configStructure *config);
+void save_all_config();
+void load_all_config();
 
 // ===== Pads initialization =====
 
@@ -466,6 +472,46 @@ void edit_bank_mapping() {
   }
 }
 
+void write_config_struct(uint16 addr, configStructure *config) {
+  size_t size = sizeof(configStructure)/16;
+
+  uint16 *ptr = (uint16 *)config;
+
+  for (size_t i=0; i<size; i++) {
+    EEPROM.update(addr++, *(ptr++));
+  }
+}
+
+void read_config_struct(uint16 addr, configStructure *config) {
+  size_t size = sizeof(configStructure)/16;
+
+  uint16 *ptr = (uint16 *)config;
+
+  for (size_t i=0; i<size; i++) {
+    *(ptr++)=EEPROM.read(addr++);
+  }
+}
+
+void save_all_config() {
+  config.uart_midi_enabled = f_uart_midi_enabled;
+  config.midi_channel_num = f_midi_channel_num;
+  config.vel_map_profile = f_vel_map_profile;
+  config.kick_vel_map_profile = f_kick_vel_map_profile;
+  config.cc_ped_enabled = f_cc_ped_enabled;
+  config.kick_ped_enabled = f_kick_ped_enabled;
+  write_config_struct(sizeof(FLASH_SIGNATURE), &config);
+}
+
+void load_all_config() {
+  f_uart_midi_enabled = config.uart_midi_enabled;
+  f_midi_channel_num = config.midi_channel_num;
+  f_vel_map_profile = config.vel_map_profile;
+  f_kick_vel_map_profile = config.kick_vel_map_profile;
+  f_cc_ped_enabled = config.cc_ped_enabled;
+  f_kick_ped_enabled = config.kick_ped_enabled;
+  load_bank_mapping();
+}
+
 // ===== Button functions =====
 
 void button1_pressed() {
@@ -693,7 +739,8 @@ void button5_pressed() {
       led.blink(LED_SLOT_COLOR[f_slot][0], LED_SLOT_COLOR[f_slot][1], LED_SLOT_COLOR[f_slot][2], f_bank+1, LED_BLINK_SLOW_PERIOD, true);
       break;
     case INTERFACE_SETTINGS:
-      // TODO save settings to flash memory
+      save_all_config();
+      led.blink(1,1,1,5, LED_BLINK_FAST_PERIOD, true); //Blink quickly for 5 cycles to indicate saved
       break;
   }  
 }
@@ -815,6 +862,17 @@ void setup() {
   // UARTMIDI setup
 
   UARTMIDI.begin();
+
+  // Configuration setup
+  uint32 signature = read_uint32(0);
+  if (signature != FLASH_SIGNATURE) { // First run of the code
+    write_uint32(0, FLASH_SIGNATURE);
+    write_config_struct(sizeof(FLASH_SIGNATURE), &config);
+  }
+  else {
+    read_config_struct(sizeof(FLASH_SIGNATURE), &config);
+    load_all_config();
+  }
 }
 
 void loop() {
