@@ -39,7 +39,14 @@ This branch contains all the hardware designs (3D models, drawing and electrical
 ## Image gallery
 
 ### Finished project
-TBA
+![](images/IMG_20240917_183127_444.jpg)
+
+![](images/IMG_20240917_183127_714.jpg)
+
+![](images/IMG_20240917_183128_216.jpg)
+
+![](images/IMG_20240917_183127_246.jpg)
+*Pedal unit design not included (yet)*
 
 ### During the making of the project
 
