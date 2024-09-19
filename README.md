@@ -1,5 +1,7 @@
 # ZYDP miniPad
 
+![](../hardware/images/IMG_20240917_183127_444.jpg)
+
 The ZYDP miniPad is an experimental MIDI finger drumpad project based on the Blue Pill (STM32F103C8T6) development board. The project features 12 pads and 5 pushbuttons for controlling the drumpad, together with TRS and USB MIDI output and the possibility of expanding the control using foot pedals. The pads are constructed from piezoelectric discs as the sensor. 
 
 [PlatformIO](https://platformio.org/) is used as the development framework of this project, using the [old Arduino STM32](https://github.com/rogerclarkmelbourne/Arduino_STM32) core by rogerclarkmelbourne (named as "genericSTM32F103C8" under PlatformIO).
